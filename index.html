@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecoverStrong - Daily Workout Tracker</title>
+    <meta name="description" content="Daily workout tracker for patellar tendon recovery and general health">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💪 RecoverStrong</h1>
+            <p class="subtitle">Daily workout tracker for tendon recovery & health</p>
+        </header>
+
+        <main>
+            <section class="today-section">
+                <h2>Today's Workout</h2>
+                <div class="date-display" id="dateDisplay"></div>
+                <div class="workout-status">
+                    <div class="status-card" id="statusCard">
+                        <p>Loading your daily routine...</p>
+                    </div>
+                    <button class="btn-primary" id="markCompleteBtn" disabled>Mark as Complete</button>
+                    <button class="btn-secondary" id="skipBtn">Skip Today</button>
+                </div>
+            </section>
+
+            <section class="workout-list">
+                <h2>Today's Exercises</h2>
+                <div class="exercises" id="exercisesContainer">
+                    <!-- Exercises will be populated by JS -->
+                </div>
+                <div class="timer">
+                    <h3>⏱️ Timer: <span id="timerDisplay">30:00</span></h3>
+                    <div class="timer-controls">
+                        <button class="btn-small" id="startTimerBtn">Start</button>
+                        <button class="btn-small" id="pauseTimerBtn">Pause</button>
+                        <button class="btn-small" id="resetTimerBtn">Reset</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="progress-section">
+                <h2>Your Progress</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="streakCount">0</div>
+                        <div class="stat-label">Day Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="completionRate">0%</div>
+                        <div class="stat-label">Weekly Completion</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalWorkouts">0</div>
+                        <div class="stat-label">Total Workouts</div>
+                    </div>
+                </div>
+                <div class="weight-tracker">
+                    <h3>📊 Weight Tracker</h3>
+                    <div class="weight-input">
+                        <input type="number" step="0.1" id="weightInput" placeholder="Enter weight (lbs)">
+                        <button class="btn-small" id="logWeightBtn">Log</button>
+                    </div>
+                    <div class="weight-history" id="weightHistory">
+                        <p>No weight data yet. Log your first entry!</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="reminders">
+                <h2>🔔 Daily Reminder</h2>
+                <div class="reminder-controls">
+                    <label>
+                        <input type="checkbox" id="reminderToggle">
+                        Enable daily reminder
+                    </label>
+                    <select id="reminderTime">
+                        <option value="08:00">8:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="20:00">8:00 PM</option>
+                    </select>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Designed for patellar tendon recovery • No weights • 30 min daily</p>
+            <p class="small">Install this app to your home screen for best experience</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
