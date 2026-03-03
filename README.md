@@ -32,11 +32,29 @@ A minimalist daily workout tracker designed for patellar tendon recovery and gen
 
 ## Installation on iPhone
 
-1. **Open in Safari**: Navigate to the app URL
+1. **Open in Safari**: Navigate to the GitHub Pages URL (https://bap22.github.io/recoverstrong/)
+   - **Important**: Make sure the URL ends with `/` (trailing slash)
 2. **Tap Share Button**: The share icon at the bottom of Safari
 3. **Scroll Down**: Find "Add to Home Screen"
 4. **Name & Add**: Name it "RecoverStrong" and tap Add
 5. **Launch**: Open from your home screen like a native app
+
+### Troubleshooting iOS Installation
+- **Problem**: Safari only captures base URL (https://bap22.github.io) without /recoverstrong
+- **Solution**: 
+  1. Clear Safari history and website data (Settings → Safari → Clear History and Website Data)
+  2. Visit https://bap22.github.io/recoverstrong/ (with trailing slash)
+  3. Wait 10 seconds for PWA manifest to load
+  4. Try "Add to Home Screen" again
+- **Alternative**: Deploy to a custom domain or subdomain (more reliable for PWAs)
+
+## Deploy to GitHub Pages
+
+1. Create a new repository named `recoverstrong`
+2. Push all files to the `main` branch
+3. Go to Settings → Pages
+4. Set Source to "Deploy from a branch" → `main` branch → `/ (root)` folder
+5. Save - your app will be live at `https://<username>.github.io/recoverstrong/`
 
 ## Local Development
 

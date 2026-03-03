@@ -7,6 +7,8 @@ class WorkoutTracker {
         this.timerSeconds = 30 * 60; // 30 minutes
         this.currentTimerSeconds = this.timerSeconds;
         this.timerRunning = false;
+        this.completionChart = null;
+        this.weightChart = null;
         
         this.workoutRoutine = [
             {
@@ -31,7 +33,7 @@ class WorkoutTracker {
                 category: 'Upper Body & Cardio',
                 exercises: [
                     { icon: '💪', name: 'Push-ups', description: 'Knee or wall version if needed', reps: '3 sets of max (aim 10)' },
-                    { icon: '🤸', name: 'Standing Jumps', description: 'Low impact, land softly - CONSULT PT FIRST', reps: '3 sets of 10' }
+                    { icon: '⚠️', name: 'Standing Jumps', description: 'CONSULT PT FIRST - May be high impact on healing tendon', reps: '3 sets of 10' }
                 ]
             },
             {
@@ -87,6 +89,7 @@ class WorkoutTracker {
         this.renderExercises();
         this.updateStats();
         this.renderWeightHistory();
+        this.renderCharts();
         this.setupEventListeners();
         this.checkTodaysCompletion();
         this.updateReminderUI();
@@ -244,6 +247,7 @@ class WorkoutTracker {
             this.saveData();
             this.checkTodaysCompletion();
             this.updateStats();
+            this.renderCharts();
             
             // Show confirmation
             const statusCard = document.getElementById('statusCard');
@@ -265,6 +269,7 @@ class WorkoutTracker {
                 this.workoutData.streak = 0;
                 this.saveData();
                 this.updateStats();
+                this.renderCharts();
             }
         }
     }
@@ -333,6 +338,7 @@ class WorkoutTracker {
         
         this.saveData();
         this.renderWeightHistory();
+        this.renderCharts();
         input.value = '';
         
         // Show confirmation
@@ -364,6 +370,126 @@ class WorkoutTracker {
         // For a real implementation, we'd use service worker background sync
         // and the Push API for actual scheduled notifications
         console.log('Reminder settings updated:', this.workoutData.settings);
+    }
+    
+    renderCharts() {
+        // Destroy existing charts
+        if (this.completionChart) {
+            this.completionChart.destroy();
+        }
+        if (this.weightChart) {
+            this.weightChart.destroy();
+        }
+        
+        // Completion Chart - Last 7 days
+        const completionCtx = document.getElementById('completionChart').getContext('2d');
+        const last7Days = [];
+        const completionData = [];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toDateString();
+            last7Days.push(date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+            completionData.push(this.workoutData.completions.includes(dateStr) ? 1 : 0);
+        }
+        
+        this.completionChart = new Chart(completionCtx, {
+            type: 'line',
+            data: {
+                labels: last7Days,
+                datasets: [{
+                    label: 'Workout Completed',
+                    data: completionData,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#2563eb',
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        ticks: {
+                            callback: function(value) {
+                                return value === 1 ? '✓' : '✗';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw === 1 ? 'Completed' : 'Missed';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Weight Chart - Last 10 entries
+        const weightCtx = document.getElementById('weightChart').getContext('2d');
+        const weightEntries = this.workoutData.weightLogs.slice(-10); // Last 10 entries
+        const weightDates = weightEntries.map(entry => {
+            const date = new Date(entry.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const weightValues = weightEntries.map(entry => entry.weight);
+        
+        if (weightEntries.length > 0) {
+            this.weightChart = new Chart(weightCtx, {
+                type: 'line',
+                data: {
+                    labels: weightDates,
+                    datasets: [{
+                        label: 'Weight (lbs)',
+                        data: weightValues,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#10b981',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grace: '5%'
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        } else {
+            // Show placeholder text if no weight data
+            weightCtx.font = '16px sans-serif';
+            weightCtx.fillStyle = '#64748b';
+            weightCtx.textAlign = 'center';
+            weightCtx.fillText('Log your weight to see progress!', weightCtx.canvas.width / 2, weightCtx.canvas.height / 2);
+        }
     }
 }
 

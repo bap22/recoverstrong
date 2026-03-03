@@ -2,39 +2,42 @@
     "name": "RecoverStrong",
     "short_name": "RecoverStrong",
     "description": "Daily workout tracker for patellar tendon recovery and general health",
-    "start_url": "/",
+    "start_url": "./",
+    "scope": "./",
     "display": "standalone",
     "background_color": "#f8fafc",
     "theme_color": "#2563eb",
     "orientation": "portrait",
     "icons": [
         {
-            "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>",
+            "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%232563eb%22>💪</text></svg>",
             "sizes": "any",
             "type": "image/svg+xml",
             "purpose": "any"
         },
         {
-            "src": "https://via.placeholder.com/192x192/2563eb/ffffff?text=RS",
+            "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%232563eb%22>💪</text></svg>",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
         },
         {
-            "src": "https://via.placeholder.com/512x512/2563eb/ffffff?text=RS",
+            "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%232563eb%22>💪</text></svg>",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
         }
     ],
     "categories": ["health", "fitness", "lifestyle"],
     "shortcuts": [
         {
             "name": "Log Today's Workout",
-            "url": "/#log",
+            "url": "./#log",
             "description": "Mark today's workout as complete"
         },
         {
             "name": "Weight Tracker",
-            "url": "/#weight",
+            "url": "./#weight",
             "description": "Log your weight"
         }
     ]

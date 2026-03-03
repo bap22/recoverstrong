@@ -314,6 +314,31 @@ footer {
     margin-top: 0.5rem;
 }
 
+/* Charts */
+.charts-section {
+    margin-bottom: 1.5rem;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.chart-wrapper {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    min-height: 250px;
+}
+
+.chart-wrapper canvas {
+    width: 100% !important;
+    height: 200px !important;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .container {
@@ -334,5 +359,15 @@ footer {
     
     .stat-value {
         font-size: 2rem;
+    }
+
+    .charts-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .chart-wrapper {
+        padding: 1rem;
+        min-height: 200px;
     }
 }
