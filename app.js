@@ -104,7 +104,10 @@ class WorkoutTracker {
     renderExercises() {
         const container = document.getElementById('exercisesContainer');
         container.innerHTML = '';
-        
+        const today = new Date().toDateString();
+        if (!this.workoutData.exerciseCompletions) this.workoutData.exerciseCompletions = {};
+        if (!this.workoutData.exerciseCompletions[today]) this.workoutData.exerciseCompletions[today] = {};
+
         this.workoutRoutine.forEach(category => {
             // Add category header
             const categoryHeader = document.createElement('h3');
@@ -112,10 +115,12 @@ class WorkoutTracker {
             categoryHeader.style.marginTop = '1.5rem';
             categoryHeader.style.marginBottom = '0.5rem';
             container.appendChild(categoryHeader);
-            
-            category.exercises.forEach(exercise => {
+
+            category.exercises.forEach((exercise, idx) => {
                 const exerciseEl = document.createElement('div');
                 exerciseEl.className = 'exercise-item';
+                const exKey = `${category.category}-${exercise.name}`;
+                const checked = this.workoutData.exerciseCompletions[today][exKey] || false;
                 exerciseEl.innerHTML = `
                     <div class="exercise-icon">${exercise.icon}</div>
                     <div class="exercise-details">
@@ -123,10 +128,100 @@ class WorkoutTracker {
                         <div class="exercise-description">${exercise.description}</div>
                     </div>
                     <div class="exercise-reps">${exercise.reps}</div>
+                    <button class="exercise-complete-btn${checked ? ' completed' : ''}" data-exkey="${exKey}">
+                        ${checked ? '✅' : 'Mark Complete'}
+                    </button>
                 `;
                 container.appendChild(exerciseEl);
             });
         });
+
+        // Add event listeners for exercise complete buttons
+        container.querySelectorAll('.exercise-complete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const exKey = btn.getAttribute('data-exkey');
+                this.markExerciseComplete(exKey, btn);
+            });
+        });
+        this.saveData();
+    }
+
+    markExerciseComplete(exKey, btn) {
+        const today = new Date().toDateString();
+        if (!this.workoutData.exerciseCompletions) this.workoutData.exerciseCompletions = {};
+        if (!this.workoutData.exerciseCompletions[today]) this.workoutData.exerciseCompletions[today] = {};
+        if (!this.workoutData.exerciseCompletions[today][exKey]) {
+            this.workoutData.exerciseCompletions[today][exKey] = true;
+            this.saveData();
+            btn.classList.add('completed');
+            btn.textContent = '✅';
+            this.launchConfetti();
+        }
+    }
+
+    launchConfetti() {
+        // Improved confetti effect using canvas, fixes sizing and overlay issues
+        let canvas = document.getElementById('confettiCanvas');
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            canvas.id = 'confettiCanvas';
+            document.body.appendChild(canvas);
+        }
+        // Make sure canvas covers the viewport
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        canvas.style.display = 'block';
+        canvas.style.position = 'fixed';
+        canvas.style.left = '0';
+        canvas.style.top = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '9999';
+        const ctx = canvas.getContext('2d');
+        const confettiCount = 180;
+        const confetti = [];
+        for (let i = 0; i < confettiCount; i++) {
+            confetti.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * -canvas.height,
+                r: 6 + Math.random() * 6,
+                d: 2 + Math.random() * 2,
+                color: `hsl(${Math.random()*360},80%,60%)`,
+                tilt: Math.random() * 10 - 5
+            });
+        }
+        let frame = 0;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confetti.forEach(c => {
+                ctx.beginPath();
+                ctx.ellipse(c.x, c.y, c.r, c.r/2, c.tilt, 0, 2 * Math.PI);
+                ctx.fillStyle = c.color;
+                ctx.fill();
+            });
+        }
+        function update() {
+            confetti.forEach(c => {
+                c.y += c.d;
+                c.x += Math.sin(frame/10 + c.tilt) * 2;
+                if (c.y > canvas.height) {
+                    c.y = Math.random() * -20;
+                    c.x = Math.random() * canvas.width;
+                }
+            });
+        }
+        function animate() {
+            frame++;
+            draw();
+            update();
+            if (frame < 160) {
+                requestAnimationFrame(animate);
+            } else {
+                canvas.style.display = 'none';
+            }
+        }
+        animate();
     }
     
     updateStats() {
