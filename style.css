@@ -169,25 +169,39 @@ button:disabled {
 }
 
 .exercise-complete-btn {
-    margin-left: 1.5rem;
-    background: var(--success);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 0.5rem 1.1rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.2s;
-    box-shadow: 0 1px 4px 0 rgba(34,211,238,0.10);
-}
-.exercise-complete-btn.completed {
+    margin-left: 0;
+    margin-right: 0;
+    align-self: flex-end;
+    margin-bottom: 0.1rem;
     background: none;
     color: var(--primary);
     border: none;
-    cursor: default;
-    transform: scale(1.08);
+    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
     box-shadow: none;
+    display: flex;
+    align-items: center;
+}
+.exercise-complete-btn.completed {
+    background: none;
+    color: #22c55e;
+    border: none;
+    cursor: default;
+    transform: scale(1.15);
+    box-shadow: none;
+}
+.checkbox-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5em;
+    height: 1.5em;
 }
 
 .exercise-icon {
@@ -195,10 +209,11 @@ button:disabled {
     margin-right: 1rem;
     width: 40px;
     text-align: center;
+    align-self: flex-start;
 }
 
 .exercise-details {
-    flex: 1;
+    width: 100%;
 }
 
 .exercise-name {
@@ -214,6 +229,8 @@ button:disabled {
 .exercise-reps {
     font-weight: 600;
     color: var(--primary);
+    font-size: 1rem;
+    margin-bottom: 0.1rem;
 }
 
 /* Timer */
@@ -394,4 +411,20 @@ footer {
         padding: 1rem;
         min-height: 200px;
     }
+}
+
+.exercise-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.exercise-bottom-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: 1.2rem;
+    width: 100%;
 }

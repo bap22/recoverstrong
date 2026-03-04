@@ -22,7 +22,7 @@
     <div class="container">
         <header>
             <h1>💪 RecoverStrong</h1>
-            <p class="subtitle">Daily workout tracker for tendon recovery & health</p>
+            <p class="subtitle">Daily workout tracker for knee recovery</p>
         </header>
 
         <main>
@@ -30,12 +30,21 @@
                 <h2>Today's Workout</h2>
                 <div class="date-display" id="dateDisplay"></div>
                 <div class="workout-status">
+                    
                     <div class="status-card" id="statusCard">
                         <p>Loading your daily routine...</p>
                     </div>
                     <button class="btn-primary" id="markCompleteBtn" disabled>Mark as Complete</button>
                     <button class="btn-secondary" id="skipBtn">Skip Today</button>
                 </div>
+                <div class="timer">
+                        <h3>⏱️ Timer: <span id="timerDisplay">30:00</span></h3>
+                        <div class="timer-controls">
+                            <button class="btn-small" id="startTimerBtn">Start</button>
+                            <button class="btn-small" id="pauseTimerBtn">Pause</button>
+                            <button class="btn-small" id="resetTimerBtn">Reset</button>
+                        </div>
+                    </div>
             </section>
 
             <section class="workout-list">
@@ -43,14 +52,7 @@
                 <div class="exercises" id="exercisesContainer">
                     <!-- Exercises will be populated by JS -->
                 </div>
-                <div class="timer">
-                    <h3>⏱️ Timer: <span id="timerDisplay">30:00</span></h3>
-                    <div class="timer-controls">
-                        <button class="btn-small" id="startTimerBtn">Start</button>
-                        <button class="btn-small" id="pauseTimerBtn">Pause</button>
-                        <button class="btn-small" id="resetTimerBtn">Reset</button>
-                    </div>
-                </div>
+                <button class="btn-primary" id="markCompleteBtnBottom" disabled>Mark as Complete</button>
             </section>
 
             <section class="progress-section">
@@ -101,18 +103,20 @@
                         Enable daily reminder
                     </label>
                     <select id="reminderTime">
+                        <option value="07:00">7:00 AM</option>
                         <option value="08:00">8:00 AM</option>
                         <option value="12:00">12:00 PM</option>
                         <option value="17:00">5:00 PM</option>
                         <option value="20:00">8:00 PM</option>
+                        <option value="21:00">9:00 PM</option>
                     </select>
                 </div>
             </section>
         </main>
 
         <footer>
-            <p>Designed for patellar tendon recovery • No weights • 30 min daily</p>
-            <p class="small">Install this app to your home screen for best experience</p>
+            <p>Designed for Brett's patellar tendon recovery • No weights • 30 min daily</p>
+            <p class="small">Use Safari "Save to Homescreen" for app experience</p>
         </footer>
     </div>
 

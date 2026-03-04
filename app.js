@@ -123,14 +123,18 @@ class WorkoutTracker {
                 const checked = this.workoutData.exerciseCompletions[today][exKey] || false;
                 exerciseEl.innerHTML = `
                     <div class="exercise-icon">${exercise.icon}</div>
-                    <div class="exercise-details">
-                        <div class="exercise-name">${exercise.name}</div>
-                        <div class="exercise-description">${exercise.description}</div>
+                    <div class="exercise-main">
+                        <div class="exercise-details">
+                            <div class="exercise-name">${exercise.name}</div>
+                            <div class="exercise-description">${exercise.description}</div>
+                        </div>
+                        <div class="exercise-bottom-row">
+                            <div class="exercise-reps">${exercise.reps}</div>
+                            <button class="exercise-complete-btn${checked ? ' completed' : ''}" data-exkey="${exKey}" aria-label="Mark exercise complete">
+                                <span class="checkbox-icon">${checked ? '✅' : '&#x25A2;'}</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="exercise-reps">${exercise.reps}</div>
-                    <button class="exercise-complete-btn${checked ? ' completed' : ''}" data-exkey="${exKey}">
-                        ${checked ? '✅' : 'Mark Complete'}
-                    </button>
                 `;
                 container.appendChild(exerciseEl);
             });
@@ -272,8 +276,11 @@ class WorkoutTracker {
     }
     
     setupEventListeners() {
-        // Mark complete button
-        document.getElementById('markCompleteBtn').addEventListener('click', () => this.markComplete());
+        // Mark complete buttons (top and bottom)
+        const markCompleteBtn = document.getElementById('markCompleteBtn');
+        const markCompleteBtnBottom = document.getElementById('markCompleteBtnBottom');
+        if (markCompleteBtn) markCompleteBtn.addEventListener('click', () => this.markComplete());
+        if (markCompleteBtnBottom) markCompleteBtnBottom.addEventListener('click', () => this.markComplete());
         
         // Skip button
         document.getElementById('skipBtn').addEventListener('click', () => this.skipDay());
@@ -309,16 +316,28 @@ class WorkoutTracker {
         const today = new Date().toDateString();
         const completed = this.workoutData.completions.includes(today);
         const btn = document.getElementById('markCompleteBtn');
+        const btnBottom = document.getElementById('markCompleteBtnBottom');
         const statusCard = document.getElementById('statusCard');
-        
         if (completed) {
             statusCard.innerHTML = '<p>✅ <strong>Workout completed today!</strong></p><p>Great job! Rest and recover.</p>';
-            btn.textContent = 'Already Completed';
-            btn.disabled = true;
+            if (btn) {
+                btn.textContent = 'Already Completed';
+                btn.disabled = true;
+            }
+            if (btnBottom) {
+                btnBottom.textContent = 'Already Completed';
+                btnBottom.disabled = true;
+            }
         } else {
-            statusCard.innerHTML = '<p>📋 <strong>Ready for today\'s workout?</strong></p><p>30 min • Patellar-safe • No weights</p>';
-            btn.textContent = 'Mark as Complete';
-            btn.disabled = false;
+            statusCard.innerHTML = '<p>📋 <strong>LET\'S GO!!!!</strong></p><p>30 min • Patellar-safe • No weights</p>';
+            if (btn) {
+                btn.textContent = 'Mark as Complete';
+                btn.disabled = false;
+            }
+            if (btnBottom) {
+                btnBottom.textContent = 'Mark as Complete';
+                btnBottom.disabled = false;
+            }
         }
     }
     
