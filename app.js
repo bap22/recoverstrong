@@ -108,6 +108,7 @@ class WorkoutTracker {
         if (!this.workoutData.exerciseCompletions) this.workoutData.exerciseCompletions = {};
         if (!this.workoutData.exerciseCompletions[today]) this.workoutData.exerciseCompletions[today] = {};
 
+
         this.workoutRoutine.forEach(category => {
             // Add category header
             const categoryHeader = document.createElement('h3');
@@ -120,7 +121,40 @@ class WorkoutTracker {
                 const exerciseEl = document.createElement('div');
                 exerciseEl.className = 'exercise-item';
                 const exKey = `${category.category}-${exercise.name}`;
-                const checked = this.workoutData.exerciseCompletions[today][exKey] || false;
+                // Timed exercise detection (e.g., '30 sec', '1 min')
+                const isTimed = /\b(\d+\s*sec|\d+\s*min)\b/i.test(exercise.reps);
+                // 3-set detection
+                const isThreeSets = /3 sets?/i.test(exercise.reps);
+
+                // For 3 sets, store completion state as array
+                if (isThreeSets && !Array.isArray(this.workoutData.exerciseCompletions[today][exKey])) {
+                    this.workoutData.exerciseCompletions[today][exKey] = [false, false, false];
+                }
+
+                let checkboxesHTML = '';
+                if (isThreeSets) {
+                    const checks = this.workoutData.exerciseCompletions[today][exKey] || [false, false, false];
+                    checkboxesHTML = `<div class="set-checkboxes">` +
+                        checks.map((val, i) => `<input type="checkbox" class="set-checkbox" data-exkey="${exKey}" data-set="${i}" ${val ? 'checked' : ''} aria-label="Set ${i+1}">`).join('') +
+                        `</div>`;
+                }
+
+                let timerHTML = '';
+                if (isTimed) {
+                    // Extract seconds from reps string
+                    let seconds = 0;
+                    const secMatch = exercise.reps.match(/(\d+)\s*sec/i);
+                    const minMatch = exercise.reps.match(/(\d+)\s*min/i);
+                    if (secMatch) seconds = parseInt(secMatch[1]);
+                    else if (minMatch) seconds = parseInt(minMatch[1]) * 60;
+                    if (seconds > 0) {
+                        timerHTML = `<div class="mini-timer" data-seconds="${seconds}">
+                            <span class="mini-timer-display">${seconds}s</span>
+                            <button class="mini-timer-start" aria-label="Start timer">▶️</button>
+                        </div>`;
+                    }
+                }
+
                 exerciseEl.innerHTML = `
                     <div class="exercise-icon">${exercise.icon}</div>
                     <div class="exercise-main">
@@ -130,9 +164,9 @@ class WorkoutTracker {
                         </div>
                         <div class="exercise-bottom-row">
                             <div class="exercise-reps">${exercise.reps}</div>
-                            <button class="exercise-complete-btn${checked ? ' completed' : ''}" data-exkey="${exKey}" aria-label="Mark exercise complete">
-                                <span class="checkbox-icon">${checked ? '✅' : '&#x25A2;'}</span>
-                            </button>
+                            ${checkboxesHTML}
+                            ${timerHTML}
+                            ${!isThreeSets ? `<button class="exercise-complete-btn${this.workoutData.exerciseCompletions[today][exKey] ? ' completed' : ''}" data-exkey="${exKey}" aria-label="Mark exercise complete"><span class="checkbox-icon">${this.workoutData.exerciseCompletions[today][exKey] ? '✅' : '&#x25A2;'}</span></button>` : ''}
                         </div>
                     </div>
                 `;
@@ -145,6 +179,36 @@ class WorkoutTracker {
             btn.addEventListener('click', (e) => {
                 const exKey = btn.getAttribute('data-exkey');
                 this.markExerciseComplete(exKey, btn);
+            });
+        });
+        // 3-set checkboxes
+        container.querySelectorAll('.set-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const exKey = cb.getAttribute('data-exkey');
+                const setIdx = parseInt(cb.getAttribute('data-set'));
+                const today = new Date().toDateString();
+                if (!this.workoutData.exerciseCompletions[today][exKey]) this.workoutData.exerciseCompletions[today][exKey] = [false, false, false];
+                this.workoutData.exerciseCompletions[today][exKey][setIdx] = cb.checked;
+                this.saveData();
+            });
+        });
+        // Mini timers
+        container.querySelectorAll('.mini-timer-start').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const timerDiv = btn.closest('.mini-timer');
+                const display = timerDiv.querySelector('.mini-timer-display');
+                let seconds = parseInt(timerDiv.getAttribute('data-seconds'));
+                btn.disabled = true;
+                display.textContent = `${seconds}s`;
+                const interval = setInterval(() => {
+                    seconds--;
+                    display.textContent = `${seconds}s`;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        display.textContent = 'Done!';
+                        btn.disabled = false;
+                    }
+                }, 1000);
             });
         });
         this.saveData();
@@ -276,6 +340,50 @@ class WorkoutTracker {
     }
     
     setupEventListeners() {
+                // Admin interface
+                const editWeightBtn = document.getElementById('editWeightBtn');
+                const editProgressBtn = document.getElementById('editProgressBtn');
+                const adminEditArea = document.getElementById('adminEditArea');
+                if (editWeightBtn) {
+                    editWeightBtn.addEventListener('click', () => {
+                        adminEditArea.style.display = 'block';
+                        adminEditArea.innerHTML = `<h4>Edit Weight Data</h4>
+                            <textarea id="weightDataEdit" rows="8" style="width:100%">${JSON.stringify(this.workoutData.weightLogs, null, 2)}</textarea>
+                            <button class="btn-small" id="saveWeightDataBtn">Save</button>
+                            <button class="btn-small" id="cancelWeightDataBtn">Cancel</button>`;
+                        document.getElementById('saveWeightDataBtn').onclick = () => {
+                            try {
+                                const newData = JSON.parse(document.getElementById('weightDataEdit').value);
+                                this.workoutData.weightLogs = newData;
+                                this.saveData();
+                                this.renderWeightHistory();
+                                this.renderCharts();
+                                adminEditArea.style.display = 'none';
+                            } catch (e) { alert('Invalid JSON'); }
+                        };
+                        document.getElementById('cancelWeightDataBtn').onclick = () => { adminEditArea.style.display = 'none'; };
+                    });
+                }
+                if (editProgressBtn) {
+                    editProgressBtn.addEventListener('click', () => {
+                        adminEditArea.style.display = 'block';
+                        adminEditArea.innerHTML = `<h4>Edit Progress Data</h4>
+                            <textarea id="progressDataEdit" rows="8" style="width:100%">${JSON.stringify(this.workoutData.completions, null, 2)}</textarea>
+                            <button class="btn-small" id="saveProgressDataBtn">Save</button>
+                            <button class="btn-small" id="cancelProgressDataBtn">Cancel</button>`;
+                        document.getElementById('saveProgressDataBtn').onclick = () => {
+                            try {
+                                const newData = JSON.parse(document.getElementById('progressDataEdit').value);
+                                this.workoutData.completions = newData;
+                                this.saveData();
+                                this.updateStats();
+                                this.renderCharts();
+                                adminEditArea.style.display = 'none';
+                            } catch (e) { alert('Invalid JSON'); }
+                        };
+                        document.getElementById('cancelProgressDataBtn').onclick = () => { adminEditArea.style.display = 'none'; };
+                    });
+                }
         // Mark complete buttons (top and bottom)
         const markCompleteBtn = document.getElementById('markCompleteBtn');
         const markCompleteBtnBottom = document.getElementById('markCompleteBtnBottom');

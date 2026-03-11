@@ -1,13 +1,13 @@
 /* Minimalist Modern Workout Tracker */
 :root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --secondary: #60a5fa;
-    --background: #f3f4f6;
-    --surface: #fff;
-    --text: #18181b;
-    --text-light: #71717a;
-    --border: #e4e4e7;
+    --primary: #60a5fa;
+    --primary-dark: #2563eb;
+    --secondary: #818cf8;
+    --background: #18181b;
+    --surface: #232329;
+    --text: #f3f4f6;
+    --text-light: #a1a1aa;
+    --border: #27272a;
     --success: #22d3ee;
     --warning: #fbbf24;
     --danger: #ef4444;
@@ -29,35 +29,182 @@ body {
     line-height: 1.6;
     padding: 0;
     min-height: 100vh;
+    font-size: 14px;
 }
 
 .container {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
 /* Header */
 header {
     text-align: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border);
+    background: transparent;
 }
 
 h1 {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
     color: var(--primary);
 }
 
 .subtitle {
     color: var(--text-light);
-    font-size: 1.1rem;
+    font-size: 0.95rem;
 }
 
 /* Sections */
+
+/* Exercise item dark mode and compact styles */
+.exercise-item {
+    display: flex;
+    align-items: flex-start;
+    background: #232329;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.7rem;
+    padding: 0.7rem 1rem;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+.exercise-icon {
+    font-size: 1.5rem;
+    margin-right: 0.7rem;
+    margin-top: 0.2rem;
+}
+.exercise-main {
+    flex: 1;
+}
+.exercise-details {
+    margin-bottom: 0.2rem;
+}
+.exercise-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+.exercise-description {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+.exercise-bottom-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.2rem;
+}
+.exercise-reps {
+    color: var(--primary);
+    font-size: 0.95rem;
+    margin-right: 0.5rem;
+}
+.exercise-complete-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-left: 0.2rem;
+    transition: color 0.2s;
+}
+.exercise-complete-btn.completed {
+    color: var(--success);
+}
+.set-checkboxes {
+    display: flex;
+    gap: 0.3rem;
+    margin-right: 0.5rem;
+}
+.set-checkbox {
+    width: 1.1em;
+    height: 1.1em;
+    accent-color: var(--primary);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--background);
+    cursor: pointer;
+}
+.mini-timer {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #18181b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.92rem;
+    color: var(--text);
+}
+.mini-timer-display {
+    min-width: 2.5em;
+    text-align: right;
+}
+.mini-timer-start {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.mini-timer-start:disabled {
+    background: #444;
+    color: #bbb;
+    cursor: not-allowed;
+}
+main, section, .workout-status, .stats-grid, .weight-tracker, .charts-section, .reminders {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+}
+
+h2, h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+p, label, input, button, .stat-label, .stat-value {
+    font-size: 0.95rem;
+}
+
+input, select, button {
+    background: var(--background);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+input:focus, select:focus, button:focus {
+    outline: 2px solid var(--primary);
+}
+
+/* Dark mode tweaks for cards and surfaces */
+.stat-card, .status-card, .weight-history, .chart-wrapper {
+    background: #232329;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+}
+
+/* Scrollbar dark mode */
+::-webkit-scrollbar {
+    width: 8px;
+    background: #232329;
+}
+::-webkit-scrollbar-thumb {
+    background: #33343a;
+    border-radius: 8px;
+}
 section {
     background: var(--surface);
     border-radius: var(--radius);
