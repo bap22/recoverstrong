@@ -9,6 +9,8 @@ class WorkoutTracker {
         this.timerRunning = false;
         this.completionChart = null;
         this.weightChart = null;
+        this.wakeLock = null;
+        this.activeTimerCount = 0; // tracks running mini-timers + main timer
         
         this.workoutRoutine = [
             {
@@ -93,6 +95,12 @@ class WorkoutTracker {
         this.setupEventListeners();
         this.checkTodaysCompletion();
         this.updateReminderUI();
+        // Re-acquire wake lock if page visibility changes (iOS releases it on background)
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && this.activeTimerCount > 0 && !this.wakeLock) {
+                await this.acquireWakeLock();
+            }
+        });
     }
     
     updateDateDisplay() {
@@ -200,6 +208,7 @@ class WorkoutTracker {
                 let seconds = parseInt(timerDiv.getAttribute('data-seconds'));
                 btn.disabled = true;
                 display.textContent = `${seconds}s`;
+                this.onTimerStart();
                 const interval = setInterval(() => {
                     seconds--;
                     display.textContent = `${seconds}s`;
@@ -207,6 +216,7 @@ class WorkoutTracker {
                         clearInterval(interval);
                         display.textContent = 'Done!';
                         btn.disabled = false;
+                        this.onTimerStop();
                     }
                 }, 1000);
             });
@@ -339,6 +349,171 @@ class WorkoutTracker {
         }).join('');
     }
     
+    renderWeightAdminTable(container) {
+        const logs = this.workoutData.weightLogs;
+        const rows = logs.map((log, i) => {
+            const dateVal = new Date(log.date).toISOString().split('T')[0];
+            return `<tr>
+                <td><input type="date" value="${dateVal}" data-wi="${i}" data-field="date"></td>
+                <td><input type="number" step="0.1" value="${log.weight}" data-wi="${i}" data-field="weight" style="max-width:100px"></td>
+                <td><button class="btn-danger" data-wi="${i}" data-action="delete-weight">✕</button></td>
+            </tr>`;
+        }).join('');
+
+        container.innerHTML = `
+            <h4 style="margin-bottom:0.5rem">Edit Weight Log</h4>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th>Date</th><th>Weight (lbs)</th><th></th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+            <div class="admin-actions">
+                <button class="btn-small" id="addWeightRowBtn">+ Add Row</button>
+                <button class="btn-primary btn-small" id="saveWeightTableBtn">Save</button>
+                <button class="btn-secondary btn-small" id="cancelWeightTableBtn">Cancel</button>
+            </div>`;
+
+        container.querySelectorAll('[data-action="delete-weight"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const i = parseInt(btn.getAttribute('data-wi'));
+                this.workoutData.weightLogs.splice(i, 1);
+                this.renderWeightAdminTable(container);
+            });
+        });
+        document.getElementById('addWeightRowBtn').onclick = () => {
+            this.workoutData.weightLogs.push({ date: new Date().toISOString(), weight: 0 });
+            this.renderWeightAdminTable(container);
+        };
+        document.getElementById('saveWeightTableBtn').onclick = () => {
+            container.querySelectorAll('input[data-wi]').forEach(inp => {
+                const i = parseInt(inp.getAttribute('data-wi'));
+                const field = inp.getAttribute('data-field');
+                if (field === 'date') {
+                    this.workoutData.weightLogs[i].date = new Date(inp.value).toISOString();
+                } else if (field === 'weight') {
+                    this.workoutData.weightLogs[i].weight = parseFloat(inp.value) || 0;
+                }
+            });
+            this.saveData();
+            this.renderWeightHistory();
+            this.renderCharts();
+            container.style.display = 'none';
+        };
+        document.getElementById('cancelWeightTableBtn').onclick = () => { container.style.display = 'none'; };
+    }
+
+    renderProgressAdminTable(container) {
+        const completions = [...this.workoutData.completions];
+        const rows = completions.map((dateStr, i) => {
+            const dateVal = new Date(dateStr).toISOString().split('T')[0];
+            return `<tr>
+                <td><input type="date" value="${dateVal}" data-pi="${i}"></td>
+                <td><button class="btn-danger" data-pi="${i}" data-action="delete-progress">✕</button></td>
+            </tr>`;
+        }).join('');
+
+        container.innerHTML = `
+            <h4 style="margin-bottom:0.5rem">Edit Workout Completions</h4>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th>Date Completed</th><th></th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+            <div class="admin-actions">
+                <button class="btn-small" id="addProgressRowBtn">+ Add Date</button>
+                <button class="btn-primary btn-small" id="saveProgressTableBtn">Save</button>
+                <button class="btn-secondary btn-small" id="cancelProgressTableBtn">Cancel</button>
+            </div>`;
+
+        container.querySelectorAll('[data-action="delete-progress"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const i = parseInt(btn.getAttribute('data-pi'));
+                this.workoutData.completions.splice(i, 1);
+                this.renderProgressAdminTable(container);
+            });
+        });
+        document.getElementById('addProgressRowBtn').onclick = () => {
+            this.workoutData.completions.push(new Date().toDateString());
+            this.renderProgressAdminTable(container);
+        };
+        document.getElementById('saveProgressTableBtn').onclick = () => {
+            const newCompletions = [];
+            container.querySelectorAll('input[data-pi]').forEach(inp => {
+                newCompletions.push(new Date(inp.value).toDateString());
+            });
+            this.workoutData.completions = newCompletions;
+            this.saveData();
+            this.updateStats();
+            this.renderCharts();
+            this.checkTodaysCompletion();
+            container.style.display = 'none';
+        };
+        document.getElementById('cancelProgressTableBtn').onclick = () => { container.style.display = 'none'; };
+    }
+
+    exportData() {
+        const json = JSON.stringify(this.workoutData, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `recoverstrong-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    importData(adminEditArea) {
+        adminEditArea.style.display = 'block';
+        adminEditArea.innerHTML = `
+            <h4 style="margin-bottom:0.75rem">📥 Import Data</h4>
+            <p style="color:var(--text-light);font-size:0.9rem;margin-bottom:0.75rem">
+                Paste your exported JSON below, or tap "Choose File" to load a backup file.<br>
+                <strong style="color:var(--warning)">This will overwrite all current data.</strong>
+            </p>
+            <input type="file" id="importFileInput" accept=".json" style="margin-bottom:0.75rem;display:block;min-height:var(--touch-min)">
+            <textarea id="importJsonArea" rows="8" style="width:100%;background:var(--background);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.75rem;font-size:0.9rem;font-family:monospace" placeholder='Paste JSON here...'></textarea>
+            <div class="admin-actions" style="margin-top:0.75rem">
+                <button class="btn-primary btn-small" id="confirmImportBtn">Import & Overwrite</button>
+                <button class="btn-secondary btn-small" id="cancelImportBtn">Cancel</button>
+            </div>`;
+
+        document.getElementById('importFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('importJsonArea').value = ev.target.result;
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('confirmImportBtn').onclick = () => {
+            try {
+                const parsed = JSON.parse(document.getElementById('importJsonArea').value);
+                // Basic validation
+                if (typeof parsed !== 'object' || !Array.isArray(parsed.completions)) {
+                    throw new Error('Invalid data shape');
+                }
+                this.workoutData = parsed;
+                this.saveData();
+                this.updateDateDisplay();
+                this.renderExercises();
+                this.updateStats();
+                this.renderWeightHistory();
+                this.renderCharts();
+                this.checkTodaysCompletion();
+                this.updateReminderUI();
+                adminEditArea.style.display = 'none';
+                alert('✅ Data imported successfully!');
+            } catch (e) {
+                alert('❌ Invalid backup file. Make sure you\'re using a file exported from this app.');
+            }
+        };
+        document.getElementById('cancelImportBtn').onclick = () => { adminEditArea.style.display = 'none'; };
+    }
+
     setupEventListeners() {
                 // Admin interface
                 const editWeightBtn = document.getElementById('editWeightBtn');
@@ -347,43 +522,17 @@ class WorkoutTracker {
                 if (editWeightBtn) {
                     editWeightBtn.addEventListener('click', () => {
                         adminEditArea.style.display = 'block';
-                        adminEditArea.innerHTML = `<h4>Edit Weight Data</h4>
-                            <textarea id="weightDataEdit" rows="8" style="width:100%">${JSON.stringify(this.workoutData.weightLogs, null, 2)}</textarea>
-                            <button class="btn-small" id="saveWeightDataBtn">Save</button>
-                            <button class="btn-small" id="cancelWeightDataBtn">Cancel</button>`;
-                        document.getElementById('saveWeightDataBtn').onclick = () => {
-                            try {
-                                const newData = JSON.parse(document.getElementById('weightDataEdit').value);
-                                this.workoutData.weightLogs = newData;
-                                this.saveData();
-                                this.renderWeightHistory();
-                                this.renderCharts();
-                                adminEditArea.style.display = 'none';
-                            } catch (e) { alert('Invalid JSON'); }
-                        };
-                        document.getElementById('cancelWeightDataBtn').onclick = () => { adminEditArea.style.display = 'none'; };
+                        this.renderWeightAdminTable(adminEditArea);
                     });
                 }
                 if (editProgressBtn) {
                     editProgressBtn.addEventListener('click', () => {
                         adminEditArea.style.display = 'block';
-                        adminEditArea.innerHTML = `<h4>Edit Progress Data</h4>
-                            <textarea id="progressDataEdit" rows="8" style="width:100%">${JSON.stringify(this.workoutData.completions, null, 2)}</textarea>
-                            <button class="btn-small" id="saveProgressDataBtn">Save</button>
-                            <button class="btn-small" id="cancelProgressDataBtn">Cancel</button>`;
-                        document.getElementById('saveProgressDataBtn').onclick = () => {
-                            try {
-                                const newData = JSON.parse(document.getElementById('progressDataEdit').value);
-                                this.workoutData.completions = newData;
-                                this.saveData();
-                                this.updateStats();
-                                this.renderCharts();
-                                adminEditArea.style.display = 'none';
-                            } catch (e) { alert('Invalid JSON'); }
-                        };
-                        document.getElementById('cancelProgressDataBtn').onclick = () => { adminEditArea.style.display = 'none'; };
+                        this.renderProgressAdminTable(adminEditArea);
                     });
                 }
+                document.getElementById('exportDataBtn')?.addEventListener('click', () => this.exportData());
+                document.getElementById('importDataBtn')?.addEventListener('click', () => this.importData(adminEditArea));
         // Mark complete buttons (top and bottom)
         const markCompleteBtn = document.getElementById('markCompleteBtn');
         const markCompleteBtnBottom = document.getElementById('markCompleteBtnBottom');
@@ -496,19 +645,61 @@ class WorkoutTracker {
         }
     }
     
+    // ── Wake Lock ──────────────────────────────────────────
+    async acquireWakeLock() {
+        if (!('wakeLock' in navigator)) return;
+        try {
+            this.wakeLock = await navigator.wakeLock.request('screen');
+            this.wakeLock.addEventListener('release', () => { this.wakeLock = null; });
+        } catch (e) {
+            console.log('Wake lock not acquired:', e.message);
+        }
+    }
+
+    releaseWakeLock() {
+        if (this.wakeLock) {
+            this.wakeLock.release();
+            this.wakeLock = null;
+        }
+    }
+
+    onTimerStart() {
+        this.activeTimerCount++;
+        if (this.activeTimerCount === 1) this.acquireWakeLock();
+    }
+
+    onTimerStop() {
+        this.activeTimerCount = Math.max(0, this.activeTimerCount - 1);
+        if (this.activeTimerCount === 0) this.releaseWakeLock();
+    }
+
+    // ── Sticky main timer ──────────────────────────────────
+    setTimerSticky(sticky) {
+        const timerEl = document.querySelector('.timer');
+        if (!timerEl) return;
+        if (sticky) {
+            timerEl.classList.add('timer-sticky');
+            document.body.classList.add('timer-active');
+        } else {
+            timerEl.classList.remove('timer-sticky');
+            document.body.classList.remove('timer-active');
+        }
+    }
+
     startTimer() {
         if (this.timerRunning) return;
-        
+
         this.timerRunning = true;
+        this.setTimerSticky(true);
+        this.onTimerStart();
         const display = document.getElementById('timerDisplay');
-        
+
         this.timerInterval = setInterval(() => {
             this.currentTimerSeconds--;
-            
+
             if (this.currentTimerSeconds <= 0) {
                 this.pauseTimer();
                 display.textContent = '00:00';
-                // Optional: play sound or notification
                 if (Notification.permission === 'granted') {
                     new Notification('RecoverStrong', {
                         body: 'Workout complete! Great job!'
@@ -516,18 +707,20 @@ class WorkoutTracker {
                 }
                 return;
             }
-            
+
             const minutes = Math.floor(this.currentTimerSeconds / 60);
             const seconds = this.currentTimerSeconds % 60;
             display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }, 1000);
-        
+
         document.getElementById('startTimerBtn').disabled = true;
         document.getElementById('pauseTimerBtn').disabled = false;
     }
-    
+
     pauseTimer() {
         this.timerRunning = false;
+        this.setTimerSticky(false);
+        this.onTimerStop();
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
             this.timerInterval = null;
@@ -572,26 +765,87 @@ class WorkoutTracker {
     updateReminderUI() {
         const toggle = document.getElementById('reminderToggle');
         const timeSelect = document.getElementById('reminderTime');
-        
+
         toggle.checked = this.workoutData.settings.reminderEnabled || false;
         timeSelect.value = this.workoutData.settings.reminderTime || '08:00';
+
+        if (this.workoutData.settings.reminderEnabled) {
+            this.scheduleNotification();
+        } else {
+            this.updateReminderStatus('Reminder off');
+        }
     }
     
     scheduleNotification() {
-        // In a real PWA, we'd use the Notification API and background sync
-        // This is a simplified version
         if (!('Notification' in window)) {
-            console.log('This browser does not support notifications');
+            this.updateReminderStatus('⚠️ Notifications not supported on this browser');
             return;
         }
-        
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
+
+        if (!this.workoutData.settings.reminderEnabled) {
+            this.updateReminderStatus('Reminder off');
+            if (this._reminderInterval) clearInterval(this._reminderInterval);
+            return;
         }
-        
-        // For a real implementation, we'd use service worker background sync
-        // and the Push API for actual scheduled notifications
-        console.log('Reminder settings updated:', this.workoutData.settings);
+
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(perm => {
+                if (perm === 'granted') {
+                    this.startReminderPolling();
+                } else {
+                    this.updateReminderStatus('⚠️ Permission denied — allow notifications in Safari settings');
+                }
+            });
+        } else if (Notification.permission === 'granted') {
+            this.startReminderPolling();
+        } else {
+            this.updateReminderStatus('⚠️ Notifications blocked — check Safari settings');
+        }
+    }
+
+    startReminderPolling() {
+        if (this._reminderInterval) clearInterval(this._reminderInterval);
+        // Check immediately, then every 60 seconds
+        this.checkAndFireReminder();
+        this._reminderInterval = setInterval(() => this.checkAndFireReminder(), 60 * 1000);
+        const time = this.workoutData.settings.reminderTime || '08:00';
+        this.updateReminderStatus(`✅ Reminder set for ${this.formatTime12h(time)} — keep app open for it to fire`);
+    }
+
+    checkAndFireReminder() {
+        if (!this.workoutData.settings.reminderEnabled) return;
+        if (Notification.permission !== 'granted') return;
+
+        const now = new Date();
+        const [h, m] = (this.workoutData.settings.reminderTime || '08:00').split(':').map(Number);
+        const todayKey = now.toDateString();
+
+        // Fire if we're within the correct minute and haven't fired today
+        if (now.getHours() === h && now.getMinutes() === m &&
+            this.workoutData.lastReminderDate !== todayKey) {
+
+            // Don't remind if already completed today
+            if (!this.workoutData.completions.includes(todayKey)) {
+                new Notification('💪 RecoverStrong', {
+                    body: "Time for your workout! Keep the streak going.",
+                    icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💪</text></svg>'
+                });
+            }
+            this.workoutData.lastReminderDate = todayKey;
+            this.saveData();
+        }
+    }
+
+    formatTime12h(time24) {
+        const [h, m] = time24.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    }
+
+    updateReminderStatus(msg) {
+        let el = document.getElementById('reminderStatus');
+        if (el) el.textContent = msg;
     }
     
     renderCharts() {
