@@ -100,6 +100,8 @@
                 <div class="admin-controls">
                     <button class="btn-small" id="editWeightBtn">Edit Weight Data</button>
                     <button class="btn-small" id="editProgressBtn">Edit Progress Data</button>
+                    <button class="btn-small" id="exportDataBtn">📤 Export Data</button>
+                    <button class="btn-small" id="importDataBtn">📥 Import Data</button>
                 </div>
                 <div id="adminEditArea" style="display:none; margin-top:1em;"></div>
             </section>
@@ -112,13 +114,19 @@
                         Enable daily reminder
                     </label>
                     <select id="reminderTime">
+                        <option value="06:00">6:00 AM</option>
                         <option value="07:00">7:00 AM</option>
                         <option value="08:00">8:00 AM</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
                         <option value="12:00">12:00 PM</option>
                         <option value="17:00">5:00 PM</option>
+                        <option value="18:00">6:00 PM</option>
                         <option value="20:00">8:00 PM</option>
                         <option value="21:00">9:00 PM</option>
                     </select>
+                    <p class="reminder-note">App must be open at reminder time. Allows notifications when prompted.</p>
+                    <div class="reminder-status" id="reminderStatus"></div>
                 </div>
             </section>
         </main>
